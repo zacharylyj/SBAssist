@@ -9,13 +9,13 @@
             font-family: Arial, sans-serif;
         }
 
-        .chat-container {
+        .input-container {
             width: 100%;
             max-width: 620px;
             min-width: 460px;
             margin: 0 auto;
             padding: 10px;
-            border-radius: 50px;
+            border-radius: 1.5em;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             position: relative;
         }
@@ -67,7 +67,9 @@
         .text-input {
             flex: 1;
             font-size: 16px;
+            /* Same */
             min-height: 16px;
+            /* Same */
             max-height: 180px;
             border-radius: 4px;
             padding: 0;
@@ -75,6 +77,7 @@
             border: 1px transparent;
             resize: none;
             overflow-y: auto;
+            font-feature-settings: "liga" 0;
         }
 
         .text-input:focus {
@@ -152,7 +155,7 @@
 </head>
 
 <body>
-    <div class="chat-container" id="chat-container">
+    <div class="input-container" id="input-container">
         <div class="input-bar" id="input-bar">
             <div class="box">
                 <div class="file-input-button">
@@ -186,7 +189,7 @@
         const textInput = document.getElementById("text-input");
         const sendButton = document.getElementById("send-button");
         const inputBar = document.getElementById("input-bar");
-        const chatContainer = document.getElementById("chat-container");
+        const chatContainer = document.getElementById("input-container");
         const fileInput = document.getElementById("file-input");
         const dragOverlay = document.getElementById("drag-overlay");
 
