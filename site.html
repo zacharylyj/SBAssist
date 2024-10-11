@@ -9,15 +9,47 @@
             font-family: Arial, sans-serif;
         }
 
+        .logo-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 50px;
+            /* Fixed height */
+            width: 100%;
+            /* Full width */
+            background-color: lightgreen;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: calc(100vh - 80px);
+            /* minus till no scroll if logo increase decrease this*/
+            margin: calc(50px + 10px) 0 20px 0;
+            gap: 10px;
+        }
+
+        .chat-container {
+            flex: 1;
+            /* Takes up the remaining space */
+            width: 100%;
+            max-width: 860px;
+            min-width: 460px;
+            border: 2px solid black;
+            /* Add a border here */
+
+        }
+
         .input-container {
             width: 100%;
             max-width: 620px;
             min-width: 460px;
-            margin: 0 auto;
+            margin: 0 30px;
             padding: 10px;
             border-radius: 1.5em;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            position: relative;
+            height: auto;
         }
 
         .input-bar {
@@ -57,7 +89,7 @@
         }
 
         .file-input-button:hover label svg {
-            fill: #4CAF50;
+            fill: #58004F;
         }
 
         .file-input-button input[type="file"] {
@@ -90,7 +122,7 @@
             height: 30px;
             border: none;
             border-radius: 50%;
-            background-color: #4CAF50;
+            background-color: #58004F;
             color: white;
             display: flex;
             align-items: center;
@@ -155,46 +187,57 @@
 </head>
 
 <body>
-    <div class="input-container" id="input-container">
-        <div class="input-bar" id="input-bar">
-            <div class="box">
-                <div class="file-input-button">
-                    <label for="file-input">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                            <path
-                                d="M12 2a2 2 0 0 1 2 2v7h3.586l-4.293-4.293a1 1 0 0 1 1.414-1.414l6 6a1 1 0 0 1 0 1.414l-6 6a 1 1 0 0 1-1.414-1.414L17.586 13H14v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h6z" />
-                        </svg>
-                    </label>
-                    <input type="file" id="file-input" multiple accept=".pdf,.txt,.docx,.xlsx" />
-                    <div class="upload-tooltip">Upload file</div>
+    <div class="logo-container"></div>
+    <div class="container">
+        <div class="chat-container">
+            <div class="chat-message">
+                <!-- Dynamically add assistant user chat messages -->
+            </div>
+            <div class="fileuploads">
+                <!-- Dynamically add File uploaded -->
+            </div>
+        </div>
+        <div class="input-container" id="input-container">
+            <div class="input-bar" id="input-bar">
+                <div class="box">
+                    <div class="file-input-button">
+                        <label for="file-input">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                <path
+                                    d="M12 2a2 2 0 0 1 2 2v7h3.586l-4.293-4.293a1 1 0 0 1 1.414-1.414l6 6a1 1 0 0 1 0 1.414l-6 6a 1 1 0 0 1-1.414-1.414L17.586 13H14v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h6z" />
+                            </svg>
+                        </label>
+                        <input type="file" id="file-input" multiple accept=".pdf,.txt,.docx,.xlsx" />
+                        <div class="upload-tooltip">Upload file</div>
+                    </div>
+                </div>
+                <textarea id="text-input" class="text-input" rows="1" placeholder="Type your message..."></textarea>
+                <div class="box">
+                    <button id="send-button" class="send-button" disabled>&#9658;</button>
                 </div>
             </div>
-            <textarea id="text-input" class="text-input" rows="1" placeholder="Type your message..."></textarea>
-            <div class="box">
-                <button id="send-button" class="send-button" disabled>&#9658;</button>
+        </div>
+        <div id="drag-overlay" class="drag-overlay" style="display: none;">
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path
+                        d="M21.41 11.58l-9-9A1.992 1.992 0 0012 2c-.53 0-1.04.21-1.41.59l-9 9c-.78.78-.78 2.05 0 2.83.78.78 2.05.78 2.83 0L5 13.83V20a2 2 0 002 2h10a2 2 0 0 1 2-2v-6.17l1.58 1.59c.39.39.9.58 1.41.58.51 0 1.02-.19 1.41-.58.78-.78.78-2.05 0-2.83z" />
+                </svg>
+                Drop .xlsx, .docx, and .txt files to be analysed
             </div>
         </div>
     </div>
-    <div id="drag-overlay" class="drag-overlay" style="display: none;">
-        <div>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <path
-                    d="M21.41 11.58l-9-9A1.992 1.992 0 0012 2c-.53 0-1.04.21-1.41.59l-9 9c-.78.78-.78 2.05 0 2.83.78.78 2.05.78 2.83 0L5 13.83V20a2 2 0 002 2h10a2 2 0 0 1 2-2v-6.17l1.58 1.59c.39.39.9.58 1.41.58.51 0 1.02-.19 1.41-.58.78-.78.78-2.05 0-2.83z" />
-            </svg>
-            Drop .xlsx, .docx, and .txt files to be analysed
-        </div>
-    </div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
     <script>
         const textInput = document.getElementById("text-input");
         const sendButton = document.getElementById("send-button");
         const inputBar = document.getElementById("input-bar");
-        const chatContainer = document.getElementById("input-container");
+        const inputContainer = document.getElementById("input-container");
         const fileInput = document.getElementById("file-input");
         const dragOverlay = document.getElementById("drag-overlay");
         let initialArray = [];
+        let activeArray = [];
 
         // Toggle send button enabled state based on input
         textInput.addEventListener("input", () => {
@@ -216,39 +259,33 @@
         // Send button click handler
         sendButton.addEventListener("click", sendMessage);
 
-        function sendMessage() {
+        function hasContent(array) {
+            return array.length > 0;
+        }
+        function replaceAndEmpty(array1, array2) {
+            array2.length = 0; // Clear array2
+            array2.push(...array1); // Copy elements from array1 to array2
+            // Empty array1
+            array1.length = 0;
+        }
+
+        async function sendMessage() {
             const message = textInput.value.trim();
             if (message) {
                 console.log("Message sent: ", message); // Placeholder: replace with your actual sending logic
                 textInput.value = "";
                 textInput.style.height = "20px";
                 sendButton.disabled = true;
+                if (hasContent(initialArray)) {
+                    replaceAndEmpty(initialArray, activeArray);
+                }
+
             }
         }
 
-        // Drag and drop file upload
-        chatContainer.addEventListener("dragover", (event) => {
-            event.preventDefault();
-            dragOverlay.style.display = "flex";
-        });
+        // function getRagExtract(query, data) {
 
-        chatContainer.addEventListener("dragleave", () => {
-            dragOverlay.style.display = "none";
-        });
-
-        chatContainer.addEventListener("drop", (event) => {
-            event.preventDefault();
-            dragOverlay.style.display = "none";
-            if (event.dataTransfer.files.length) {
-                handleFileUpload(event.dataTransfer.files);
-            }
-        });
-
-        fileInput.addEventListener("change", (event) => {
-            if (event.target.files.length) {
-                handleFileUpload(event.target.files);
-            }
-        });
+        // }
 
         function handleFileUpload(files) {
             uploadFile(files);
@@ -260,7 +297,7 @@
 
                 if (file.type === "application/pdf") {
                     const fileData = await readFileAsArrayBuffer(file);
-                    extractedText = await extractTextWithPdfJs(fileData);
+                    extractedText = await extractTextFromPdf(fileData);
                 } else if (file.type === "text/plain") {
                     extractedText = await readFileAsText(file);
                 } else if (file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
@@ -297,7 +334,7 @@
             });
         }
 
-        async function extractTextWithPdfJs(arrayBuffer) {
+        async function extractTextFromPdf(arrayBuffer) {
             const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
             let text = "";
             for (let i = 1; i <= pdf.numPages; i++) {
@@ -321,6 +358,29 @@
             return text;
         }
 
+        // Drag and drop file upload
+        inputContainer.addEventListener("dragover", (event) => {
+            event.preventDefault();
+            dragOverlay.style.display = "flex";
+        });
+
+        inputContainer.addEventListener("dragleave", () => {
+            dragOverlay.style.display = "none";
+        });
+
+        inputContainer.addEventListener("drop", (event) => {
+            event.preventDefault();
+            dragOverlay.style.display = "none";
+            if (event.dataTransfer.files.length) {
+                handleFileUpload(event.dataTransfer.files);
+            }
+        });
+
+        fileInput.addEventListener("change", (event) => {
+            if (event.target.files.length) {
+                handleFileUpload(event.target.files);
+            }
+        });
         // Global drop handler to hide overlay if dragging out of the window
         window.addEventListener("dragover", (event) => {
             event.preventDefault();
