@@ -41,6 +41,47 @@
 
         }
 
+        .chat-user {
+            background-color: #d4f8e8;
+            border-radius: 1rem;
+            text-align: left;
+            width: 70%;
+            margin-left: auto;
+            margin-right: 30px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .chat-assistant {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .chat-assistant img.assistant-logo {
+            width: 25px;
+            height: 25px;
+            margin-right: 5px;
+        }
+
+        .chat-assistant div {
+            flex: 1;
+            text-align: left;
+        }
+
+        .chat-container {
+            overflow-y: auto;
+            max-height: 500px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .chat-message {
+            display: flex;
+            flex-direction: column;
+        }
+
         .input-container {
             width: 100%;
             max-width: 620px;
@@ -238,6 +279,8 @@
         const dragOverlay = document.getElementById("drag-overlay");
         let initialArray = [];
         let activeArray = [];
+        let chatHistory = [];
+
 
         // Toggle send button enabled state based on input
         textInput.addEventListener("input", () => {
@@ -258,7 +301,40 @@
 
         // Send button click handler
         sendButton.addEventListener("click", sendMessage);
+        function scrollToBottom() {
+            const chatContainer = document.querySelector('.chat-container');
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        function createChatSequence() {
+            const chatMessageContainer = document.querySelector('.chat-message');
 
+            // Create user message div
+            const userMessageDiv1 = document.createElement('div');
+            userMessageDiv1.className = 'chat-user';
+            userMessageDiv1.innerHTML = 'Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.';
+            chatMessageContainer.appendChild(userMessageDiv1);
+
+            // Create assistant message div
+            const assistantMessageDiv1 = document.createElement('div');
+            assistantMessageDiv1.className = 'chat-assistant';
+            assistantMessageDiv1.innerHTML = '<img src="assistant-logo.png" alt="Assistant Logo" class="assistant-logo">Hi, I am the assistant responding to your message.\nHi, I am the assistant responding to your message.';
+            chatMessageContainer.appendChild(assistantMessageDiv1);
+
+            // Create another user message div
+            const userMessageDiv2 = document.createElement('div');
+            userMessageDiv2.className = 'chat-user';
+            userMessageDiv2.innerHTML = 'Here is another user message.';
+            chatMessageContainer.appendChild(userMessageDiv2);
+
+            // Create another assistant message div
+            const assistantMessageDiv2 = document.createElement('div');
+            assistantMessageDiv2.className = 'chat-assistant';
+            assistantMessageDiv2.innerHTML = '<img src="assistant-logo.png" alt="Assistant Logo" class="assistant-logo">I am responding again as the assistant.';
+            chatMessageContainer.appendChild(assistantMessageDiv2);
+
+            scrollToBottom();
+        }
+        createChatSequence()
         function hasContent(array) {
             return array.length > 0;
         }
