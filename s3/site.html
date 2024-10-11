@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 620px;
+            min-width: 460px;
+            margin: 0 auto;
+            padding: 10px;
+            border-radius: 50px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .input-bar {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+        }
+
+        .input-bar .box {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .file-input-button {
+            border: none;
+            background-color: transparent;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .file-input-button label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .file-input-button label svg {
+            width: 24px;
+            height: 24px;
+            fill: #666;
+            transition: fill 0.2s;
+        }
+
+        .file-input-button:hover label svg {
+            fill: #4CAF50;
+        }
+
+        .file-input-button input[type="file"] {
+            display: none;
+        }
+
+        .text-input {
+            flex: 1;
+            font-size: 16px;
+            min-height: 16px;
+            max-height: 180px;
+            border-radius: 4px;
+            padding: 0;
+            margin: auto;
+            border: 1px transparent;
+            resize: none;
+            overflow-y: auto;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border: none;
+        }
+
+        .send-button {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 50%;
+            background-color: #4CAF50;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .send-button:hover:not(:disabled) {
+            opacity: 0.8;
+        }
+
+        .send-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .drag-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            color: white;
+            font-size: 1.5em;
+            text-align: center;
+            pointer-events: none;
+            backdrop-filter: blur(5px);
+        }
+
+        .drag-overlay svg {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 10px;
+            fill: white;
+        }
+
+        .upload-tooltip {
+            position: absolute;
+            bottom: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            white-space: nowrap;
+            display: none;
+            pointer-events: none;
+        }
+
+        .file-input-button:hover .upload-tooltip {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container" id="chat-container">
+        <div class="input-bar" id="input-bar">
+            <div class="box">
+                <div class="file-input-button">
+                    <label for="file-input">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path
+                                d="M12 2a2 2 0 0 1 2 2v7h3.586l-4.293-4.293a1 1 0 0 1 1.414-1.414l6 6a1 1 0 0 1 0 1.414l-6 6a 1 1 0 0 1-1.414-1.414L17.586 13H14v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h6z" />
+                        </svg>
+                    </label>
+                    <input type="file" id="file-input" multiple accept=".pdf,.txt,.docx,.xlsx" />
+                    <div class="upload-tooltip">Upload file</div>
+                </div>
+            </div>
+            <textarea id="text-input" class="text-input" rows="1" placeholder="Type your message..."></textarea>
+            <div class="box">
+                <button id="send-button" class="send-button" disabled>&#9658;</button>
+            </div>
+        </div>
+    </div>
+    <div id="drag-overlay" class="drag-overlay" style="display: none;">
+        <div>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path
+                    d="M21.41 11.58l-9-9A1.992 1.992 0 0012 2c-.53 0-1.04.21-1.41.59l-9 9c-.78.78-.78 2.05 0 2.83.78.78 2.05.78 2.83 0L5 13.83V20a2 2 0 002 2h10a2 2 0 0 1 2-2v-6.17l1.58 1.59c.39.39.9.58 1.41.58.51 0 1.02-.19 1.41-.58.78-.78.78-2.05 0-2.83z" />
+            </svg>
+            Drop .xlsx, .docx, and .txt files to be analysed
+        </div>
+    </div>
+
+    <script>
+        const textInput = document.getElementById("text-input");
+        const sendButton = document.getElementById("send-button");
+        const inputBar = document.getElementById("input-bar");
+        const chatContainer = document.getElementById("chat-container");
+        const fileInput = document.getElementById("file-input");
+        const dragOverlay = document.getElementById("drag-overlay");
+
+        // Toggle send button enabled state based on input
+        textInput.addEventListener("input", () => {
+            textInput.style.height = "20px";
+            textInput.style.height = Math.min(textInput.scrollHeight, 180) + "px";
+            sendButton.disabled = textInput.value.trim() === "";
+        });
+
+        // Add shift+enter for a new line
+        textInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                if (!sendButton.disabled) {
+                    sendMessage();
+                }
+            }
+        });
+
+        // Send button click handler
+        sendButton.addEventListener("click", sendMessage);
+
+        function sendMessage() {
+            const message = textInput.value.trim();
+            if (message) {
+                console.log("Message sent: ", message); // Placeholder: replace with your actual sending logic
+                textInput.value = "";
+                textInput.style.height = "20px";
+                sendButton.disabled = true;
+            }
+        }
+
+        // Drag and drop file upload
+        chatContainer.addEventListener("dragover", (event) => {
+            event.preventDefault();
+            dragOverlay.style.display = "flex";
+        });
+
+        chatContainer.addEventListener("dragleave", () => {
+            dragOverlay.style.display = "none";
+        });
+
+        chatContainer.addEventListener("drop", (event) => {
+            event.preventDefault();
+            dragOverlay.style.display = "none";
+            if (event.dataTransfer.files.length) {
+                fileInput.files = event.dataTransfer.files;
+                console.log("Files uploaded: ", fileInput.files); // Placeholder: replace with your actual file handling logic
+            }
+        });
+
+        // Global drop handler to hide overlay if dragging out of the window
+        window.addEventListener("dragover", (event) => {
+            event.preventDefault();
+        });
+
+        window.addEventListener("drop", () => {
+            dragOverlay.style.display = "none";
+        });
+    </script>
+</body>
+
+</html>
