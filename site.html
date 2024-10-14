@@ -50,6 +50,13 @@
             margin-right: 30px;
             padding: 10px;
             margin-bottom: 10px;
+            font-size: 16px;
+            font-family: Arial, sans-serif;
+            border: none;
+            outline: none;
+            resize: none;
+            overflow: hidden;
+            white-space: pre-wrap;
         }
 
         .chat-assistant {
@@ -224,14 +231,63 @@
         .file-input-button:hover .upload-tooltip {
             display: block;
         }
+
+        /* Universal styles for all scrollbars */
+
+        /* Chrome, Edge, Safari */
+        *::-webkit-scrollbar {
+            width: 6px;
+            /* Width of the scrollbar */
+            height: 6px;
+            /* Height for horizontal scrollbars */
+        }
+
+        *::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            /* Background color of the scrollbar track */
+            border-radius: 10px;
+            /* Rounded corners on the scrollbar track */
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background-color: #888;
+            /* Color of the scrollbar thumb */
+            border-radius: 10px;
+            /* Rounded corners on the scrollbar thumb */
+            border: 2px solid transparent;
+            /* Optionally add space around thumb for better look */
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background-color: #555;
+            /* Darker color when the scrollbar is hovered */
+        }
+
+        /* Firefox */
+        * {
+            scrollbar-width: thin;
+            /* Makes the scrollbar thinner */
+            scrollbar-color: #888 #f1f1f1;
+            /* Thumb color (first), track color (second) */
+        }
+
+        /* Optional: make horizontal scrollbar slightly different */
+        *::-webkit-scrollbar-horizontal {
+            height: 6px;
+            /* Adjust height for horizontal scrollbars */
+        }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/showdown/dist/showdown.min.js"></script>
 </head>
 
 <body>
     <div class="logo-container"></div>
     <div class="container">
         <div class="chat-container">
-            <div class="chat-message">
+            <div class="chat-message" id="chat-message">
                 <!-- Dynamically add assistant user chat messages -->
             </div>
             <div class="fileuploads">
@@ -268,73 +324,136 @@
             </div>
         </div>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
     <script>
+        // Global Var
         const textInput = document.getElementById("text-input");
         const sendButton = document.getElementById("send-button");
         const inputBar = document.getElementById("input-bar");
         const inputContainer = document.getElementById("input-container");
         const fileInput = document.getElementById("file-input");
         const dragOverlay = document.getElementById("drag-overlay");
+        const chatMessageContainer = document.querySelector('.chat-message');
+        let ws;
+        let assistantMessageDiv
+        let currentMarkdown = "";
         let initialArray = [];
         let activeArray = [];
-        let chatHistory = [];
+        let maxChatHistory = [];
+        const maxHistoryLength = 20 // Number of assistant and user message to send back
+        let reconnectInterval = 1000; // 1 seconds
 
 
-        // Toggle send button enabled state based on input
-        textInput.addEventListener("input", () => {
-            textInput.style.height = "20px";
-            textInput.style.height = Math.min(textInput.scrollHeight, 180) + "px";
-            sendButton.disabled = textInput.value.trim() === "";
-        });
+        function updateHTML(markdown) {
+            const converter = new showdown.Converter();
+            const html = converter.makeHtml(markdown);
 
-        // Add shift+enter for a new line
-        textInput.addEventListener("keydown", (event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                if (!sendButton.disabled) {
-                    sendMessage();
-                }
+            if (assistantMessageDiv) {
+                assistantMessageDiv.innerHTML = html;
             }
-        });
+            scrollToBottom(); // Ensure the chat box scrolls to the latest message
+        }
+        function finalizeHTML(markdown) {
+            const converter = new showdown.Converter();
+            const finalHtml = converter.makeHtml(markdown);
 
-        // Send button click handler
-        sendButton.addEventListener("click", sendMessage);
+            // Replace textarea content with the final version of the message
+            if (assistantMessageDiv) {
+                assistantMessageDiv.value = finalHtml; // Set the final message in the textarea
+            }
+
+            scrollToBottom(); // Ensure the chat box scrolls to the latest message
+        }
+
+
+        function connectWebSocket() {
+            ws = new WebSocket('wss://jz92qcvyd4.execute-api.ap-southeast-1.amazonaws.com/prod/');
+
+            ws.onopen = function () {
+                console.log('WebSocket connection opened');
+            };
+
+            ws.onerror = function (error) {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = function () {
+                console.log('WebSocket connection closed, attempting to reconnect in ' + reconnectInterval / 1000 + ' seconds...');
+                setTimeout(connectWebSocket, reconnectInterval);
+            };
+
+            ws.onmessage = function (event) {
+                if (!assistantMessageDiv) {
+                    // Create a new textarea for each new response
+                    assistantMessageDiv = document.createElement('div');
+                    assistantMessageDiv.className = 'chat-assistant';
+                    chatMessageContainer.appendChild(assistantMessageDiv);
+                }
+                const parts = event.data.split('𵵙');
+                const cleanedData = parts.filter((_, index) => index % 2 === 0).join(''); // Keep only the parts outside the markers
+
+                currentMarkdown += cleanedData; // Accumulate the cleaned streamed markdown data
+
+                // Display streaming content in the textarea
+                assistantMessageDiv.value = currentMarkdown.trim();
+
+
+                if (event.data.includes('𵵙')) {
+                    // If the end of the message is received, finalize the rendering
+                    const completeMessage = currentMarkdown.split('𵵙')[0].trim(); // Split and trim correctly
+                    finalizeHTML(completeMessage); // Finalize the message with markdown conversion
+                    maxChatHistory.push({
+                        role: 'assistant',
+                        content: completeMessage
+                    });
+                    currentMarkdown = ""; // Clear for the next message
+
+                    // Reset the textarea so that a new one is created for the next response
+                    assistantMessageDiv = null;
+                }
+            };
+        }
+
+
+
+        function authenticate() {
+            const payload = {
+                user: 'LKCadmin@admin.com',
+                password: 'LKCMedcine2024!'
+            };
+            console.log("Starting authentication...");
+
+            return fetch('https://r6i2hvxhknzoe7shxuhnfk2i6e0mgkbh.lambda-url.ap-southeast-1.on.aws/get-key', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload),
+            })
+                .then(response => response.text())  // Returning the response as text
+                .then(data => {
+                    return data;  // Returning the data to the calling context
+                })
+                .catch(error => {
+                    console.error('Error during authentication:', error);
+                    throw error;  // Rethrow the error to the calling context
+                });
+        }
+        async function callAuthentication() {
+            try {
+                const result = await authenticate();  // Waits for the authentication result
+                console.log('Received authentication result');
+                return result
+                // Handle the returned result here
+            } catch (error) {
+                console.error('Authentication failed:', error);
+            }
+        }
+
         function scrollToBottom() {
             const chatContainer = document.querySelector('.chat-container');
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
-        function createChatSequence() {
-            const chatMessageContainer = document.querySelector('.chat-message');
 
-            // Create user message div
-            const userMessageDiv1 = document.createElement('div');
-            userMessageDiv1.className = 'chat-user';
-            userMessageDiv1.innerHTML = 'Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.Hello, this is the first user message.';
-            chatMessageContainer.appendChild(userMessageDiv1);
-
-            // Create assistant message div
-            const assistantMessageDiv1 = document.createElement('div');
-            assistantMessageDiv1.className = 'chat-assistant';
-            assistantMessageDiv1.innerHTML = '<img src="assistant-logo.png" alt="Assistant Logo" class="assistant-logo">Hi, I am the assistant responding to your message.\nHi, I am the assistant responding to your message.';
-            chatMessageContainer.appendChild(assistantMessageDiv1);
-
-            // Create another user message div
-            const userMessageDiv2 = document.createElement('div');
-            userMessageDiv2.className = 'chat-user';
-            userMessageDiv2.innerHTML = 'Here is another user message.';
-            chatMessageContainer.appendChild(userMessageDiv2);
-
-            // Create another assistant message div
-            const assistantMessageDiv2 = document.createElement('div');
-            assistantMessageDiv2.className = 'chat-assistant';
-            assistantMessageDiv2.innerHTML = '<img src="assistant-logo.png" alt="Assistant Logo" class="assistant-logo">I am responding again as the assistant.';
-            chatMessageContainer.appendChild(assistantMessageDiv2);
-
-            scrollToBottom();
-        }
-        createChatSequence()
         function hasContent(array) {
             return array.length > 0;
         }
@@ -344,18 +463,99 @@
             // Empty array1
             array1.length = 0;
         }
+        function isWebSocketConnected() {
+            return ws && ws.readyState === WebSocket.OPEN; // Check if WebSocket is in the 'OPEN' state
+        }
+        function createUserMessage(text) {
+            // Create the textarea element
+            const textArea = document.createElement('textarea');
+            textArea.className = 'chat-user';
+            textArea.readOnly = true; // Prevent user editing
+            chatMessageContainer.appendChild(textArea);
+
+            // Function to auto-resize the textarea
+            function autoResize() {
+                textArea.style.height = 'auto'; // Reset height
+                textArea.style.height = (textArea.scrollHeight - 18) + 'px'; // Set height based on content
+            }
+
+            // Calculate total time and dynamically adjust chunk size and delay
+            const totalDuration = 100; // Total time to display in milliseconds (3.5 seconds)
+            const textLength = text.length;
+
+            // Calculate chunk size based on the length of the text
+            let chunkSize = Math.max(Math.floor(textLength / 100), 1); // Ensure at least 1 character per chunk
+
+            let typingDelay = totalDuration / (textLength / chunkSize);
+
+            // Function to "stream" the message character by character
+            let index = 0;
+            function typeWriter() {
+                if (index < text.length) {
+                    textArea.value += text.substring(index, index + chunkSize);
+                    autoResize(); // Adjust height after adding new content
+                    index += chunkSize; // Move index forward by chunk size
+                    setTimeout(typeWriter, typingDelay); // Adjust delay dynamically
+                    scrollToBottom(); // Keep scrolling to the bottom if needed
+                }
+            }
+            // Start the typing animation
+            typeWriter();
+        }
 
         async function sendMessage() {
             const message = textInput.value.trim();
+            if (!isWebSocketConnected()) {
+                console.log('WebSocket is not connected. Reconnecting...');
+                connectWebSocket();
+
+                // Wait for the WebSocket to be ready before sending the message
+                const waitForConnection = new Promise((resolve) => {
+                    ws.onopen = () => {
+                        console.log('WebSocket reconnected, sending message...');
+                        resolve();
+                    };
+                });
+
+                await waitForConnection; // Wait until the WebSocket reconnects
+            }
+            createUserMessage(message)
+            const chatHistory = maxChatHistory.slice(-maxHistoryLength + 1)
             if (message) {
-                console.log("Message sent: ", message); // Placeholder: replace with your actual sending logic
+                console.log("Message sent: ", message); // log
                 textInput.value = "";
                 textInput.style.height = "20px";
                 sendButton.disabled = true;
                 if (hasContent(initialArray)) {
                     replaceAndEmpty(initialArray, activeArray);
                 }
+                // Add in custtom message
+                let userMessage = message
+                try {
+                    sys_prompt = `
+Use markdown format only:            
+                    `
+                    const authkey = await callAuthentication();
+                    const request_llm = {
+                        "action": "stream",
+                        "deployment_name": "gpt4-Omni",
+                        "key": authkey,
+                        "sys_instruct": sys_prompt,
+                        "user_request": userMessage,
+                        "extended_content": [...chatHistory.slice(-maxHistoryLength + 1)]
+                    };
+                    console.log('Sending message to server:', message);
+                    ws.send(JSON.stringify(request_llm));
+                    maxChatHistory.push({
+                        role: 'user',
+                        content: userMessage
+                    });
+                    console.log(maxChatHistory);
 
+                } catch (error) {
+                    console.error("Error querying Lambda:", error); // Enhanced error logging
+                    return null;
+                }
             }
         }
 
@@ -465,6 +665,26 @@
         window.addEventListener("drop", () => {
             dragOverlay.style.display = "none";
         });
+        // Toggle send button enabled state based on input
+        textInput.addEventListener("input", () => {
+            textInput.style.height = "20px";
+            textInput.style.height = Math.min(textInput.scrollHeight, 180) + "px";
+            sendButton.disabled = textInput.value.trim() === "";
+        });
+
+        // Add shift+enter for a new line
+        textInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                if (!sendButton.disabled) {
+                    sendMessage();
+                }
+            }
+        });
+
+        // Send button click handler
+        sendButton.addEventListener("click", sendMessage);
+
     </script>
 </body>
 
