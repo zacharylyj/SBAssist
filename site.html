@@ -13,41 +13,29 @@
             position: absolute;
             top: 0;
             left: 0;
-            height: 50px;
-            /* Fixed height */
-            width: 100%;
-            /* Full width */
-            background-color: lightgreen;
+            height: 80px;
+            width: auto
         }
 
         .container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            height: calc(100vh - 80px);
+            height: calc(100vh - 100px);
             /* minus till no scroll if logo increase decrease this*/
-            margin: calc(50px + 10px) 0 20px 0;
+            margin: calc(50px + 30px) 0 20px 0;
             gap: 10px;
-        }
-
-        .chat-container {
-            flex: 1;
-            /* Takes up the remaining space */
-            width: 100%;
-            max-width: 860px;
-            min-width: 460px;
-            border: 2px solid black;
-            /* Add a border here */
-
         }
 
         .chat-user {
             background-color: #d4f8e8;
             border-radius: 1rem;
             text-align: left;
-            width: 70%;
+            max-width: 70%;
+            width: auto;
+            min-width: 100px;
             margin-left: auto;
-            margin-right: 30px;
+            margin-right: 10px;
             padding: 10px;
             margin-bottom: 10px;
             font-size: 16px;
@@ -66,22 +54,31 @@
         }
 
         .chat-assistant img.assistant-logo {
-            width: 25px;
-            height: 25px;
-            margin-right: 5px;
+            width: 28px;
+            height: 28px;
+            margin-right: 2px;
+            border-radius: 50%;
+            /* This makes the image a circle */
+            object-fit: cover;
+            /* Ensures the image scales properly within the circle */
         }
 
-        .chat-assistant div {
+
+        .chat-assistant .assistant-message {
             flex: 1;
             text-align: left;
         }
 
         .chat-container {
+            flex: 1;
+            /* Takes up the remaining space */
+            width: 100%;
+            max-width: 920px;
+            min-width: 460px;
             overflow-y: auto;
-            max-height: 500px;
             padding: 10px;
-            border: 1px solid #ccc;
             border-radius: 5px;
+
         }
 
         .chat-message {
@@ -143,6 +140,85 @@
         .file-input-button input[type="file"] {
             display: none;
         }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #f1f1f1;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            position: relative;
+            max-width: 600px;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+
+        .file-item:hover {
+            background-color: #e0e0e0;
+            /* Optional: slightly change background color on hover */
+        }
+
+        .file-close {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: #f44336;
+            border: none;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            /* Initially hidden */
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            line-height: 16px;
+            font-weight: bold;
+            padding: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        .file-item:hover .file-close {
+            display: flex;
+            /* Show close button on hover */
+        }
+
+        .file-close:hover {
+            background-color: #d32f2f;
+        }
+
+        .file-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .file-details {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .file-name {
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        .file-type {
+            font-size: 12px;
+            color: #666;
+        }
+
 
         .text-input {
             flex: 1;
@@ -276,6 +352,17 @@
             height: 6px;
             /* Adjust height for horizontal scrollbars */
         }
+
+        .no-select {
+            user-select: none;
+            /* Prevents text selection */
+            -webkit-user-select: none;
+            /* Safari */
+            -moz-user-select: none;
+            /* Firefox */
+            -ms-user-select: none;
+            /* Internet Explorer/Edge */
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
@@ -284,17 +371,17 @@
 </head>
 
 <body>
-    <div class="logo-container"></div>
+    <img class="logo-container no-select" src="./assets/lkc_logo.png" alt="LKC Medicine Logo">
     <div class="container">
         <div class="chat-container">
             <div class="chat-message" id="chat-message">
                 <!-- Dynamically add assistant user chat messages -->
             </div>
-            <div class="fileuploads">
-                <!-- Dynamically add File uploaded -->
-            </div>
         </div>
         <div class="input-container" id="input-container">
+            <div class="file-container" id="fileContainer">
+                <!-- Dynamically add File uploaded -->
+            </div>
             <div class="input-bar" id="input-bar">
                 <div class="box">
                     <div class="file-input-button">
@@ -358,9 +445,8 @@
 
             // Replace textarea content with the final version of the message
             if (assistantMessageDiv) {
-                assistantMessageDiv.value = finalHtml; // Set the final message in the textarea
+                assistantMessageDiv.innerHTML = finalHtml;
             }
-
             scrollToBottom(); // Ensure the chat box scrolls to the latest message
         }
 
@@ -383,19 +469,32 @@
 
             ws.onmessage = function (event) {
                 if (!assistantMessageDiv) {
-                    // Create a new textarea for each new response
+                    // Create a new outer div for chat assistant
+                    let chatAssistantDiv = document.createElement('div');
+                    chatAssistantDiv.className = 'chat-assistant';
+
+                    // Create the image element
+                    let imgElement = document.createElement('img');
+                    imgElement.src = './assets/assistant-logo.png';
+                    imgElement.alt = 'Assistant Logo';
+                    imgElement.className = 'assistant-logo';
+
+                    // Append the image to the outer div
+                    chatAssistantDiv.appendChild(imgElement);
+
+                    // Create a new div for the assistant's message
                     assistantMessageDiv = document.createElement('div');
-                    assistantMessageDiv.className = 'chat-assistant';
-                    chatMessageContainer.appendChild(assistantMessageDiv);
+                    assistantMessageDiv.className = 'assistant-message'; // Change class name to avoid conflict
+
+                    // Append the message div to the outer div
+                    chatAssistantDiv.appendChild(assistantMessageDiv);
+
+                    // Append the outer div to the chat container
+                    chatMessageContainer.appendChild(chatAssistantDiv);
                 }
-                const parts = event.data.split('𵵙');
-                const cleanedData = parts.filter((_, index) => index % 2 === 0).join(''); // Keep only the parts outside the markers
+                currentMarkdown += event.data; // Accumulate the streamed markdown data
 
-                currentMarkdown += cleanedData; // Accumulate the cleaned streamed markdown data
-
-                // Display streaming content in the textarea
-                assistantMessageDiv.value = currentMarkdown.trim();
-
+                updateHTML(currentMarkdown.trim());
 
                 if (event.data.includes('𵵙')) {
                     // If the end of the message is received, finalize the rendering
@@ -412,8 +511,6 @@
                 }
             };
         }
-
-
 
         function authenticate() {
             const payload = {
@@ -505,21 +602,8 @@
 
         async function sendMessage() {
             const message = textInput.value.trim();
-            if (!isWebSocketConnected()) {
-                console.log('WebSocket is not connected. Reconnecting...');
-                connectWebSocket();
-
-                // Wait for the WebSocket to be ready before sending the message
-                const waitForConnection = new Promise((resolve) => {
-                    ws.onopen = () => {
-                        console.log('WebSocket reconnected, sending message...');
-                        resolve();
-                    };
-                });
-
-                await waitForConnection; // Wait until the WebSocket reconnects
-            }
             createUserMessage(message)
+
             const chatHistory = maxChatHistory.slice(-maxHistoryLength + 1)
             if (message) {
                 console.log("Message sent: ", message); // log
@@ -528,12 +612,38 @@
                 sendButton.disabled = true;
                 if (hasContent(initialArray)) {
                     replaceAndEmpty(initialArray, activeArray);
+                    renderFileItems()
+                }
+                for (let file of activeArray) {
+                    console.log()
+                    try {
+                        const query = message;  // User message (query)
+                        const data = file.content;  // Content of the file from activeArray
+                        // Send message and file content to getRagExtract
+                        await getRagExtract(query, data);
+                    } catch (error) {
+                        console.error(`Error while processing file: ${file.fileName}`, error);
+                    }
+                }
+                if (!isWebSocketConnected()) {
+                    console.log('WebSocket is not connected. Reconnecting...');
+                    connectWebSocket();
+
+                    // Wait for the WebSocket to be ready before sending the message
+                    const waitForConnection = new Promise((resolve) => {
+                        ws.onopen = () => {
+                            console.log('WebSocket reconnected, sending message...');
+                            resolve();
+                        };
+                    });
+
+                    await waitForConnection; // Wait until the WebSocket reconnects
                 }
                 // Add in custtom message
                 let userMessage = message
                 try {
                     sys_prompt = `
-Use markdown format only:            
+Use markdown format only:
                     `
                     const authkey = await callAuthentication();
                     const request_llm = {
@@ -559,10 +669,88 @@ Use markdown format only:
             }
         }
 
-        // function getRagExtract(query, data) {
+        async function getRagExtract(query, data) {
+            const content = `
+User Query: ${query}
+Data: ${data}
+`
+            let dataContent = ""
+            const response = await fetch('https://akhvqo57ff5z44dvsbplnggro40eissk.lambda-url.ap-southeast-1.on.aws/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    messages: [{
+                        role: 'user',
+                        content: content
+                    }],
+                    azure_model_endpoint: 'gpt4-Omni'
+                }),
+            });
 
-        // }
+            console.log('Handshake:', response);
+            if (!response.body) {
+                console.error('No response body');
+                return;
+            }
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let done = false;
 
+            console.log('Starting to read the stream...');
+
+            while (!done) {
+                const {
+                    value,
+                    done: doneReading
+                } = await reader.read();
+                done = doneReading;
+                let chunk = decoder.decode(value, {
+                    stream: true
+                });
+                dataContent += chunk;
+                console.log("Chunk: ", chunk);
+            }
+        }
+        function renderFileItems() {
+            console.log("Rendering Files")
+            const fileContainer = document.getElementById('fileContainer');
+            fileContainer.innerHTML = ''; // Clear the container before re-rendering
+
+            initialArray.forEach((file, index) => {
+                // Create the file item container
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+
+                // Create the close button
+                const closeButton = document.createElement('button');
+                closeButton.className = 'file-close';
+                closeButton.innerHTML = '&times;'; // Close icon
+                closeButton.onclick = () => {
+                    initialArray.splice(index, 1); // Remove the file from the array
+                    renderFileItems(); // Re-render the file items
+                };
+
+                // Create the file icon
+                const fileIcon = document.createElement('div');
+                fileIcon.className = 'file-icon';
+                fileIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a2 2 0 0 1 2 2v7h3.586l-4.293-4.293a1 1 0 0 1 1.414-1.414l6 6a1 1 0 0 1 0 1.414l-6 6a1 1 0 0 1-1.414-1.414L17.586 13H14v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h6z"/></svg>`;
+
+                // Create the file name and type container
+                const fileDetails = document.createElement('div');
+                fileDetails.className = 'file-details';
+                fileDetails.innerHTML = `<span class="file-name">${file.fileName}</span> <span class="file-type">(${file.fileName.split('.').pop()})</span>`;
+
+                // Append close button, file icon, and file details to the file item
+                fileItem.appendChild(closeButton);
+                fileItem.appendChild(fileIcon);
+                fileItem.appendChild(fileDetails);
+
+                // Append the file item to the file container
+                fileContainer.appendChild(fileItem);
+            });
+        }
         function handleFileUpload(files) {
             uploadFile(files);
         }
@@ -589,6 +777,7 @@ Use markdown format only:
                     console.log("File processed: ", file.name);
                     console.log("Extracted content: ", extractedText);
                 }
+                renderFileItems()
             }
         }
 
