@@ -428,6 +428,7 @@
         let maxChatHistory = [];
         const maxHistoryLength = 20 // Number of assistant and user message to send back
         let reconnectInterval = 1000; // 1 seconds
+        connectWebSocket();
 
 
         function updateHTML(markdown) {
@@ -601,6 +602,7 @@
         }
 
         async function sendMessage() {
+            let userMessage = "Rag Items:\n"
             const message = textInput.value.trim();
             createUserMessage(message)
 
@@ -615,12 +617,10 @@
                     renderFileItems()
                 }
                 for (let file of activeArray) {
-                    console.log()
                     try {
-                        const query = message;  // User message (query)
-                        const data = file.content;  // Content of the file from activeArray
                         // Send message and file content to getRagExtract
-                        await getRagExtract(query, data);
+                        const ragtext = await getRagExtract(message, file.content);
+                        userMessage += `Rag Data from ${file.fileName}: ${ragtext}\n\n`
                     } catch (error) {
                         console.error(`Error while processing file: ${file.fileName}`, error);
                     }
@@ -639,8 +639,8 @@
 
                     await waitForConnection; // Wait until the WebSocket reconnects
                 }
+                userMessage += `User Query: ${message}`
                 // Add in custtom message
-                let userMessage = message
                 try {
                     sys_prompt = `
 Use markdown format only:
@@ -675,7 +675,7 @@ User Query: ${query}
 Data: ${data}
 `
             let dataContent = ""
-            const response = await fetch('https://akhvqo57ff5z44dvsbplnggro40eissk.lambda-url.ap-southeast-1.on.aws/', {
+            const response = await fetch('https://mmzaorzrkjnikxr7ijfrt4tdfe0sndwi.lambda-url.ap-southeast-1.on.aws/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -712,6 +712,7 @@ Data: ${data}
                 dataContent += chunk;
                 console.log("Chunk: ", chunk);
             }
+            return dataContent
         }
         function renderFileItems() {
             console.log("Rendering Files")
