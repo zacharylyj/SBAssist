@@ -28,7 +28,7 @@
         }
 
         .chat-user {
-            background-color: #d1c9ffb3;
+            background-color: #d4f8e8;
             border-radius: 1rem;
             text-align: left;
             max-width: 70%;
@@ -376,17 +376,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            background: rgba(0, 0, 0, 0.5);
             /* Optional: background overlay */
             border-radius: 8px;
             padding: 20px;
         }
 
         .fade-in-gif {
-            width: 128px;
+            width: 100px;
             /* Set your desired width */
             height: auto;
             opacity: 0;
-            animation: fadeIn 1s forwards;
+            animation: fadeIn 0.8s forwards;
         }
 
         @keyframes fadeIn {
@@ -463,9 +464,8 @@
 <body>
     <img class="logo-container no-select" src="./assets/lkc_logo.png" alt="LKC Medicine Logo">
     <div id="gif-container" class="gif-container" style="display: none;">
-        <img src="./assets/Loading.gif" alt="Loading GIF" class="fade-in-gif">
+        <img src="Loading.gif" alt="Loading GIF" class="fade-in-gif">
     </div>
-
     <div class="container">
         <div id="welcome-message" class="welcome-message">
             <h1>Welcome to the 𝑺𝑩𝑨𝒔𝒔𝒊𝒔𝒕</h1>
@@ -516,8 +516,7 @@
                 </div>
             </div>
         </div>
-        <p class="warn-text">
-            SBAssist AI can make mistakes. Check important info
+        <p class="warn-text">AI is not 100% correct
         </p>
         <div id="drag-overlay" class="drag-overlay" style="display: none;">
             <div>
@@ -577,8 +576,7 @@
         const gifContainer = document.getElementById("gif-container");
 
         let ws;
-        let currentlyStreaming;
-        let assistantMessageDiv;
+        let assistantMessageDiv
         let currentMarkdown = "";
         let initialArray = [];
         let activeArray = [];
@@ -609,7 +607,7 @@
         }
         function removeFrontBackticks(text) {
             // Use a regular expression to remove the starting ```markdown followed by optional spaces
-            return text.replace(/^```\s*markdown\s*/, '');
+            return text.replace(/^```markdown\s*/, '');
         }
         function removeOuterBackticks(text) {
             // Check if the text starts with ```markdown, followed by optional spaces
@@ -637,7 +635,6 @@
             };
 
             ws.onmessage = function (event) {
-                hideGif()
                 if (!assistantMessageDiv) {
                     // Create a new outer div for chat assistant
                     let chatAssistantDiv = document.createElement('div');
@@ -678,8 +675,6 @@
 
                     // Reset the textarea so that a new one is created for the next response
                     assistantMessageDiv = null;
-                    currentlyStreaming = false;
-                    sendButton.disabled = textInput.value.trim() === "";
                 }
             };
         }
@@ -775,18 +770,13 @@
                 welcomeMessage.remove();
             }, 500); // Match this with the animation duration
         }
-        function showGif() {
-            const gifContainer = document.getElementById("gif-container");
-            gifContainer.style.display = "flex";
-        }
-        function hideGif() {
-            const gifContainer = document.getElementById("gif-container");
-            gifContainer.style.display = "none";
-        }
-
         async function sendMessage() {
-            sendButton.disabled = true;
-            currentlyStreaming = true;
+            gifContainer.style.display = "flex";
+
+            // Optional: Hide the GIF after 3 seconds
+            setTimeout(() => {
+                gifContainer.style.display = "none";
+            }, 3000);
             if (inputContainer.classList.contains("centered")) {
                 // Trigger the animate animation for the input-container
                 inputContainer.classList.add("animate");
@@ -807,13 +797,13 @@
             let userMessage = "Rag Items:\n"
             const message = textInput.value.trim();
             createUserMessage(message)
-            const chatHistory = maxChatHistory.slice(-maxHistoryLength + 1)
-            showGif()
 
+            const chatHistory = maxChatHistory.slice(-maxHistoryLength + 1)
             if (message) {
                 console.log("Message sent: ", message); // log
                 textInput.value = "";
                 textInput.style.height = "20px";
+                sendButton.disabled = true;
                 if (hasContent(initialArray)) {
                     replaceAndEmpty(initialArray, activeArray);
                     renderFileItems()
@@ -848,7 +838,6 @@
                 try {
                     sys_prompt = `
 Goal:
-You are SBAssist AI. 
 Case-Based MCQ Generator is a specialized tool for generating case-based multiple-choice questions (MCQs) in medical and health professions education. It uses a Medical Instruct as the primary approach, offering versatility in creating contextually relevant MCQs especially for assessing clinical reasoning skills. The generator sole function is to generate high-quality MCQs for educational purposes.
 
 
@@ -877,15 +866,15 @@ Question stem: [Insert relevant information from the above sections without comp
 Acceptable question style: Ask for the BEST answer NOT one that is TRUE/FALSE.
 
 Answer options:
-*A.* [Insert plausible answer option]
+[Insert plausible answer option]
 
-*B.* [Insert plausible answer option]
+[Insert plausible answer option]
 
-*C.* [Insert plausible answer option]
+[Insert plausible answer option]
 
-*D.* [Insert plausible answer option]
+[Insert plausible answer option]
 
-*E.* [Insert plausible answer option]
+[Insert plausible answer option]
 
 Explanation:
 Identify and explain the correct answer.
@@ -894,12 +883,12 @@ Explain why this is the most appropriate answer based on evidence-based guidelin
 
 Briefly explain why the other answer options are less correct or incorrect.
 
-Difficulty level: [PLEASE INSERT A DIFFICULTY LEVEL (E.G. EASY, DIFFICULT]
+Difficulty level: [PLEASE INSERT A DIFFICULTY LEVEL (E.G. EASY DIFFICULT]
 
-Harvard Style citation and references at the end.
+State references at the end. If it was from the above Rag items add (retrieved from document: [Name of document])
 
 
-Return the output in Markdown format.`
+Return the output in Markdown format`
                     const authkey = await callAuthentication();
                     const request_llm = {
                         "action": "stream",
@@ -1121,9 +1110,7 @@ Data: ${data}
         textInput.addEventListener("input", () => {
             textInput.style.height = "20px";
             textInput.style.height = Math.min(textInput.scrollHeight, 180) + "px";
-            if (!currentlyStreaming) {
-                sendButton.disabled = textInput.value.trim() === "";
-            }
+            sendButton.disabled = textInput.value.trim() === "";
         });
 
         // Add shift+enter for a new line
