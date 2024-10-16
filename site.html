@@ -97,6 +97,28 @@
             height: auto;
         }
 
+        /* Initial centered style for input-container */
+        .input-container.centered {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: top 0.5s ease, transform 0.5s ease;
+        }
+
+        /* Final position after moving down */
+        .input-container.moved {
+            top: calc(50px + 30px);
+            transform: translateX(-50%);
+        }
+
+        /* Hide the h1 with a fade-out effect */
+        h1.fade-out {
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
         .input-bar {
             display: flex;
             align-items: flex-end;
@@ -373,12 +395,13 @@
 <body>
     <img class="logo-container no-select" src="./assets/lkc_logo.png" alt="LKC Medicine Logo">
     <div class="container">
+        <h1 id="welcome-message">Welcome to the Chat</h1>
         <div class="chat-container">
             <div class="chat-message" id="chat-message">
                 <!-- Dynamically add assistant user chat messages -->
             </div>
         </div>
-        <div class="input-container" id="input-container">
+        <div class="input-container centered" id="input-container">
             <div class="file-container" id="fileContainer">
                 <!-- Dynamically add File uploaded -->
             </div>
@@ -467,6 +490,7 @@
         const fileInput = document.getElementById("file-input");
         const dragOverlay = document.getElementById("drag-overlay");
         const chatMessageContainer = document.querySelector('.chat-message');
+        const welcomeMessage = document.getElementById("welcome-message");
         let ws;
         let assistantMessageDiv
         let currentMarkdown = "";
@@ -646,6 +670,22 @@
 
 
         async function sendMessage() {
+            if (inputContainer.classList.contains("centered")) {
+                // Trigger the fade-out animation for the h1
+                welcomeMessage.classList.add("fade-out");
+
+                // Wait for the fade-out animation to complete before moving the input-container
+                setTimeout(() => {
+                    // Move the input-container down
+                    inputContainer.classList.remove("centered");
+                    inputContainer.classList.add("moved");
+
+                    // Completely remove the h1 element from the DOM after the animation
+                    setTimeout(() => {
+                        welcomeMessage.remove();
+                    }, 500); // Match this to the CSS transition time
+                }, 500); // Wait for the h1 animation to finish (500ms)
+            }
             let userMessage = "Rag Items:\n"
             const message = textInput.value.trim();
             createUserMessage(message)
