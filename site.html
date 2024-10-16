@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBAssist</title>
+
     <style>
         body {
             font-family: ui-sans-serif, -apple-system, system-ui, Segoe UI, Helvetica, Apple Color Emoji, Arial, sans-serif, Segoe UI Emoji, Segoe UI Symbol;
@@ -399,6 +401,55 @@
             }
         }
 
+        /* Styles for RAG Pop-up */
+        .rag-popup {
+            position: fixed;
+            top: 0;
+            left: -400px;
+            /* Hidden initially */
+            width: 400px;
+            height: 100%;
+            background-color: #f9f9f9;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.3);
+            transition: left 0.3s ease-in-out;
+            z-index: 1000;
+            overflow-y: hidden;
+        }
+
+        .rag-popup.open {
+            left: 0;
+            /* Slide in when open */
+        }
+
+        .rag-popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #813a7a;
+            color: white;
+        }
+
+        .close-rag-popup {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .rag-content {
+            padding: 30px;
+            font-size: 14px;
+            color: #333;
+            white-space: pre-wrap;
+            /* Preserve formatting */
+            overflow-y: auto;
+            height: calc(100% - 100px);
+            /* Adjust as needed */
+        }
+
+
         /* Universal styles for all scrollbars */
         /* Chrome, Edge, Safari */
         *::-webkit-scrollbar {
@@ -465,7 +516,14 @@
     <div id="gif-container" class="gif-container" style="display: none;">
         <img src="./assets/Loading.gif" alt="Loading GIF" class="fade-in-gif">
     </div>
-
+    <!-- Side Pop-up for RAG data -->
+    <div id="rag-popup" class="rag-popup">
+        <div class="rag-popup-header">
+            <span>RAG Data</span>
+            <button id="close-rag-popup" class="close-rag-popup">&times;</button>
+        </div>
+        <div id="rag-content" class="rag-content"></div>
+    </div>
     <div class="container">
         <div id="welcome-message" class="welcome-message">
             <h1>Welcome to the 𝑺𝑩𝑨𝒔𝒔𝒊𝒔𝒕</h1>
@@ -822,7 +880,7 @@
                 for (let file of activeArray) {
                     try {
                         // Send message and file content to getRagExtract
-                        const ragtext = await getRagExtract(message, file.content);
+                        const ragtext = await getRagExtract(message, file.content, file.fileName);
                         userMessage += `\nDocument: ${file.fileName}\n${ragtext}\n`
 
                     } catch (error) {
@@ -925,7 +983,7 @@ Return the output in Markdown format.`
             }
         }
 
-        async function getRagExtract(query, data) {
+        async function getRagExtract(query, data, filename) {
             const content = `
 User Query: ${query}
 Data: ${data}
@@ -956,6 +1014,13 @@ Data: ${data}
 
             console.log('Starting to read the stream...');
 
+            const ragPopup = document.getElementById("rag-popup");
+            const ragContent = document.getElementById("rag-content");
+            const ragHeader = ragPopup.querySelector(".rag-popup-header span");
+            ragPopup.classList.add("open");
+            ragContent.textContent = ""; // Clear previous content
+            ragHeader.textContent = `Extracting from: ${filename}`;
+
             while (!done) {
                 const {
                     value,
@@ -965,9 +1030,14 @@ Data: ${data}
                 let chunk = decoder.decode(value, {
                     stream: true
                 });
-                dataContent += chunk;
-                console.log("Chunk: ", chunk);
+                dataContent += chunk
+                ragContent.textContent += chunk;
+                ragContent.scrollTop = ragContent.scrollHeight;
             }
+            setTimeout(() => {
+                ragPopup.classList.remove("open");
+            }, 3000); // Delay
+
             return dataContent
         }
         function renderFileItems() {
@@ -1139,6 +1209,10 @@ Data: ${data}
         // Send button click handler
         sendButton.addEventListener("click", sendMessage);
 
+        document.getElementById("close-rag-popup").addEventListener("click", () => {
+            const ragPopup = document.getElementById("rag-popup");
+            ragPopup.classList.remove("open");
+        });
     </script>
 </body>
 
