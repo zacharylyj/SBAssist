@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body,
+        html {
+            height: 100%;
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+
+        .login-box {
+            width: 360px;
+            padding: 10px 40px 40px 40px;
+            background: #fff;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .login-box img {
+            width: 300px;
+            margin-bottom: 20px;
+        }
+
+        .login-box h1 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #333;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .input-field:focus {
+            border-color: #72306d;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #72306d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .login-btn:hover {
+            background-color: #774773;
+        }
+
+        #errorMessage {
+            color: red;
+            display: none;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="login-box">
+            <img src="./assets/lkc_logo.png" alt="Logo">
+            <h1>Login</h1>
+
+            <form id="loginForm">
+                <input class="input-field" type="text" name="email" placeholder="Email" autocomplete="email">
+                <input class="input-field" type="password" name="pass" placeholder="Password"
+                    autocomplete="current-password">
+
+                <div id="errorMessage">Invalid username or password, please try again.</div>
+
+                <button type="submit" class="login-btn">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Function to set a cookie
+        function setCookie(name, value, hours) {
+            var now = new Date();
+            now.setTime(now.getTime() + (hours * 60 * 60 * 1000));
+            var expires = "expires=" + now.toUTCString();
+            document.cookie = name + "=" + value + ";" + expires + ";path=/;SameSite=Lax";
+        }
+
+        // Check if user and pass cookies exist on load and redirect
+        window.onload = function () {
+            var lkcUser = getCookie("lkcuser");
+            var lkcPass = getCookie("lkcpass");
+
+            if (lkcUser && lkcPass) {
+                window.location.href = './site.html'; // Redirect if cookies are found
+            }
+        };
+
+        // Helper to get cookies
+        function getCookie(name) {
+            var value = "; " + document.cookie;
+            var parts = value.split("; " + name + "=");
+            if (parts.length === 2) return parts.pop().split(";").shift();
+        }
+
+        // Form submission handler
+        document.getElementById('loginForm').addEventListener('submit', function (event) {
+            event.preventDefault(); // Prevent the default form submission
+
+            var username = document.getElementsByName('email')[0].value;
+            var password = document.getElementsByName('pass')[0].value;
+            var data = {
+                user: username,
+                password: password
+            };
+
+            fetch('https://r6i2hvxhknzoe7shxuhnfk2i6e0mgkbh.lambda-url.ap-southeast-1.on.aws/get-key', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => {
+                    if (response.status === 200) {
+                        // Credentials are valid, set the cookies for username and password
+                        setCookie("lkcuser", username, 3); // hour expiry
+                        setCookie("lkcpass", password, 3); // hour expiry
+                        window.location.href = './site.html'; // Redirect to site page
+                    } else if (response.status === 401) {
+                        document.getElementById('errorMessage').style.display = 'block'; // Show error message
+                    } else {
+                        return Promise.reject('An error occurred');
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    document.getElementById('errorMessage').style.display = 'block'; // Show error message on any other error
+                });
+        });
+    </script>
+
+</body>
+
+</html>
